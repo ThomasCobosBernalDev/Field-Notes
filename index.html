@@ -10,16 +10,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#161614;
-    --panel:#1e1e1b;
-    --line:#2c2c27;
-    --cement:#c9c5bd;
-    --cement-dim:#8a877f;
-    --orange:#ff6a00;
-    --green:#2fd07a;
-    --red:#e8503a;
+    --bg:#070b12;
+    --panel:#0e1520;
+    --line:#1c2735;
+    --cement:#dde6ee;
+    --cement-dim:#66798d;
+    --orange:#cbaf82;
+    --green:#6fd6b4;
+    --red:#e08a6b;
     --mono:'IBM Plex Mono',monospace;
     --disp:'Archivo',sans-serif;
+    --glass:rgba(255,255,255,0.055);
+    --glass-border:rgba(255,255,255,0.14);
+    --glass-shadow:0 10px 40px rgba(0,0,0,0.45);
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-pill:999px;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -28,12 +34,23 @@
     color:var(--cement);
     font-family:var(--mono);
     min-height:100vh;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:-10%;
+    background:
+      radial-gradient(600px 600px at 12% 8%, rgba(203,175,130,0.16), transparent 60%),
+      radial-gradient(700px 700px at 92% 20%, rgba(111,214,180,0.12), transparent 60%),
+      radial-gradient(800px 800px at 50% 95%, rgba(102,121,141,0.18), transparent 60%);
+    z-index:-1; pointer-events:none;
   }
   .wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px}
 
-    header{
+  header{
     display:flex;justify-content:space-between;align-items:baseline;
-    border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:26px;
+    padding-bottom:16px;margin-bottom:28px;
+    border-bottom:1px solid var(--glass-border);
   }
   header h1{
     font-family:var(--disp);
@@ -44,12 +61,12 @@
   header h1 span{color:var(--orange)}
   .tag{font-size:11px;color:var(--cement-dim);letter-spacing:.08em;text-transform:uppercase}
 
-    .big{margin-bottom:6px}
+  .big{margin-bottom:6px}
   .big .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cement-dim);margin-bottom:6px}
   .big .value{
     font-family:var(--disp);font-weight:900;font-stretch:80%;
     font-size:clamp(44px,10vw,72px);
-    color:#f2f0eb;line-height:1;font-variant-numeric:tabular-nums;
+    color:#eef4f9;line-height:1;font-variant-numeric:tabular-nums;
   }
   .big .value .pos, .big .value .neg{font-family:var(--disp)}
   .big .delta{font-size:14px;margin-top:8px;font-variant-numeric:tabular-nums}
@@ -57,59 +74,103 @@
   .pos{color:var(--green)}
   .neg{color:var(--red)}
 
-    .frames{display:flex;gap:8px;margin:20px 0 8px}
-  .frames button{
-    background:none;border:1px solid var(--line);color:var(--cement-dim);
-    font-family:var(--mono);font-size:12px;padding:5px 14px;cursor:pointer;
-    letter-spacing:.06em;transition:all .12s;
+  .frames{
+    display:flex;gap:4px;margin:22px 0 16px;
+    background:var(--glass);
+    backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border:1px solid var(--glass-border); border-radius:var(--radius-pill);
+    padding:4px;
+    box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
   }
-  .frames button:hover{border-color:var(--cement-dim);color:var(--cement)}
-  .frames button.active{background:var(--orange);border-color:var(--orange);color:#161614;font-weight:600}
+  .frames button{
+    flex:1;background:none;border:none;color:var(--cement-dim);
+    font-family:var(--mono);font-size:12px;padding:8px 10px;cursor:pointer;
+    letter-spacing:.06em;transition:all .2s cubic-bezier(.4,0,.2,1);
+    border-radius:var(--radius-pill);
+  }
+  .frames button:hover{color:var(--cement)}
+  .frames button.active{
+    background:linear-gradient(160deg,#e6d7b3,var(--orange));
+    color:#1a1408;font-weight:600;
+    box-shadow:0 4px 14px rgba(203,175,130,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .frames button:active{transform:scale(0.96)}
   .frames button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
 
-    .chartbox{position:relative;border:1px solid var(--line);background:var(--panel);margin-bottom:6px}
+  .chartbox{
+    position:relative;
+    border:1px solid var(--glass-border);
+    background:linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015));
+    backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+    margin-bottom:10px;
+    box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
   canvas{display:block;width:100%;height:360px;touch-action:pan-y;cursor:crosshair;user-select:none}
   @media(max-width:560px){canvas{height:280px}}
   @media(max-width:380px){canvas{height:230px}}
   .hint{font-size:10.5px;color:var(--cement-dim);letter-spacing:.03em;margin:0 0 28px 2px}
 
-    .stats{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
-    background:var(--line);border:1px solid var(--line);margin-bottom:34px;
+  .stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    margin-bottom:34px;
   }
   @media(max-width:520px){.stats{grid-template-columns:1fr}}
-  .stat{background:var(--panel);padding:14px 14px 12px}
+  .stat{
+    background:var(--glass);
+    backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--glass-border); border-radius:var(--radius-md);
+    padding:16px 16px 14px;
+    box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
   .stat .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--cement-dim);margin-bottom:6px}
-  .stat .v{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:20px;color:#f2f0eb;font-variant-numeric:tabular-nums}
+  .stat .v{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:20px;color:#eef4f9;font-variant-numeric:tabular-nums}
   .stat .v.pos{color:var(--green)}
   .stat .v.neg{color:var(--red)}
 
-    .milestone{margin-bottom:34px}
-  .milestone-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .milestone{margin-bottom:34px}
+  .milestone-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
   .milestone-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cement-dim)}
   .milestone-pct{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:18px;color:var(--orange);font-variant-numeric:tabular-nums}
-  .milestone-track{height:10px;background:var(--panel);border:1px solid var(--line)}
-  .milestone-fill{height:100%;background:linear-gradient(90deg,#ff6a00,#ffab5c);width:0%;transition:width .5s ease}
-  .milestone-sub{margin-top:7px;font-size:12px;color:var(--cement-dim);font-variant-numeric:tabular-nums}
+  .milestone-track{
+    height:12px;background:var(--glass);border:1px solid var(--glass-border);
+    border-radius:var(--radius-pill);overflow:hidden;
+    backdrop-filter:blur(10px);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,0.35);
+  }
+  .milestone-fill{
+    height:100%;background:linear-gradient(90deg,#cbaf82,#e6d7b3);
+    width:0%;transition:width .6s cubic-bezier(.4,0,.2,1);
+    border-radius:var(--radius-pill);
+    box-shadow:0 0 12px rgba(203,175,130,0.5);
+  }
+  .milestone-sub{margin-top:8px;font-size:12px;color:var(--cement-dim);font-variant-numeric:tabular-nums}
 
-    h2{
+  h2{
     font-family:var(--disp);font-weight:900;font-stretch:75%;text-transform:uppercase;
     font-size:16px;letter-spacing:.04em;margin-bottom:12px;color:var(--cement);
   }
   h2 span{color:var(--orange)}
-  .rows{border-top:1px solid var(--line)}
+  .rows{
+    border:1px solid var(--glass-border); border-radius:var(--radius-md); overflow:hidden;
+    background:var(--glass);
+    backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+    box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
   .row{
     display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;
-    padding:9px 4px;border-bottom:1px solid var(--line);font-size:13px;
+    padding:11px 14px;border-bottom:1px solid var(--glass-border);font-size:13px;
     font-variant-numeric:tabular-nums;
   }
+  .row:last-child{border-bottom:none}
   .row .m{color:var(--cement-dim)}
   .row .m b{color:var(--orange);font-weight:600;margin-left:8px;font-size:11px}
-  .row .nw{color:#e8e6e0}
+  .row .nw{color:#eef4f9}
   .row .ch{text-align:right;font-size:12px}
-  @media(max-width:480px){.row{grid-template-columns:88px 1fr auto;font-size:12px}}
+  @media(max-width:480px){.row{grid-template-columns:88px 1fr auto;font-size:12px;padding:10px 12px}}
 
-  footer{margin-top:40px;font-size:11px;color:var(--cement-dim);letter-spacing:.06em}
+  footer{margin-top:36px;font-size:11px;color:var(--cement-dim);letter-spacing:.06em;opacity:.75}
   @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
@@ -138,7 +199,7 @@
   <div class="chartbox">
     <canvas id="chart" aria-label="Trend chart. Click and drag to compare two points."></canvas>
   </div>
-  <div class="hint">Click and drag across the chart to compare any two points. Click once to unlock.</div>
+  <div class="hint">Drag with your mouse to compare any two points. On touch, drag your finger to scrub and see the change since the start.</div>
 
   <div class="milestone">
     <div class="milestone-head">
@@ -158,6 +219,7 @@
 </div>
 
 <script>
+// I add a new line here every month: [year, month, amount, "age or null"]. Month is 1-12, keep it in order.
 const DATA = [
   [2022, 3, 5000,  "18"],
   [2022,10, 2500,  "19"],
@@ -219,6 +281,11 @@ const chartPoints = points.slice(1);
 const fmt = n => "$" + Math.round(n).toLocaleString("en-US");
 const fmtSigned = n => (n >= 0 ? "+" : "-") + "$" + Math.abs(Math.round(n)).toLocaleString("en-US");
 const fmtCompact = n => n === 0 ? "$0" : "$" + Math.round(n/1000) + "K";
+function hexToRgba(hex, alpha){
+  const h = hex.replace("#","");
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return "rgba("+r+","+g+","+b+","+alpha+")";
+}
 
 let range = "ALL"; // "1M" | "3M" | "YTD" | "1Y" | "ALL"
 let hoverIdx = null;
@@ -246,9 +313,9 @@ function renderBig(){
   let p, prev, whenTxt;
   if(hoverIdx !== null){
     p = vis[hoverIdx];
-    prev = hoverIdx > 0 ? vis[hoverIdx-1] : null;
+    prev = vis[0];
     bigLabel.textContent = p.label + (p.age ? " \u00b7 " + p.age : "");
-    whenTxt = "vs prior month";
+    whenTxt = "since " + prev.label;
   } else {
     p = vis[vis.length-1];
     prev = vis[0];
@@ -279,6 +346,19 @@ function renderSelection(){
   bigLabel.textContent = pStart.label + " \u2192 " + pEnd.label;
   bigValue.innerHTML = '<span class="'+cls+'">' + (pct>=0?"+":"") + pct.toFixed(1) + "%</span>";
   bigDelta.innerHTML = '<span class="'+cls+'">' + fmtSigned(diff) + '</span><span class="when">selected range</span>';
+}
+
+function renderTouchScrub(idx){
+  const vis = visible();
+  const pStart = vis[0], pEnd = vis[idx];
+  const diff = pEnd.v - pStart.v;
+  const pct = pStart.v !== 0 ? (diff/Math.abs(pStart.v)*100) : 0;
+  const cls = diff >= 0 ? "pos" : "neg";
+  bigLabel.textContent = pEnd.label + (pEnd.age ? " \u00b7 " + pEnd.age : "");
+  bigValue.innerHTML = fmt(pEnd.v);
+  bigDelta.innerHTML =
+    '<span class="'+cls+'">' + fmtSigned(diff) + " (" + (diff>=0?"+":"") + pct.toFixed(1) + "%)</span>" +
+    '<span class="when">since ' + pStart.label + '</span>';
 }
 
 function axisTicks(maxVal, step){
@@ -349,8 +429,8 @@ function draw(){
   });
 
     const grad = ctx.createLinearGradient(0,PAD.t,0,h-PAD.b);
-  grad.addColorStop(0,"rgba(255,106,0,0.22)");
-  grad.addColorStop(1,"rgba(255,106,0,0)");
+  grad.addColorStop(0,hexToRgba(ORANGE,0.22));
+  grad.addColorStop(1,hexToRgba(ORANGE,0));
   ctx.beginPath();
   vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
   ctx.lineTo(X(vis.length-1), h-PAD.b);
@@ -362,11 +442,20 @@ function draw(){
   vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
   ctx.strokeStyle = ORANGE; ctx.lineWidth = isMobile ? 1.75 : 2.25;
   ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.shadowColor = hexToRgba(ORANGE, 0.6); ctx.shadowBlur = isMobile ? 6 : 10;
   ctx.stroke();
+  ctx.shadowBlur = 0;
 
     const last = vis[vis.length-1];
+  const lastX = X(vis.length-1), lastY = Y(last.v);
+  const haloR = isMobile ? 10 : 14;
+  const halo = ctx.createRadialGradient(lastX,lastY,0,lastX,lastY,haloR);
+  halo.addColorStop(0, hexToRgba(ORANGE, 0.55));
+  halo.addColorStop(1, hexToRgba(ORANGE, 0));
+  ctx.beginPath(); ctx.arc(lastX,lastY,haloR,0,Math.PI*2);
+  ctx.fillStyle = halo; ctx.fill();
   ctx.beginPath();
-  ctx.arc(X(vis.length-1), Y(last.v), isMobile ? 3 : 4, 0, Math.PI*2);
+  ctx.arc(lastX, lastY, isMobile ? 3 : 4, 0, Math.PI*2);
   ctx.fillStyle = ORANGE; ctx.fill();
 
     const currentMonth = chartPoints[chartPoints.length-1].m;
@@ -402,14 +491,14 @@ function draw(){
     if(dragStart !== null && dragCurrent !== null){
     const a = Math.min(dragStart, dragCurrent), b = Math.max(dragStart, dragCurrent);
     const xA = X(a), xB = X(b);
-    ctx.fillStyle = "rgba(255,106,0,0.10)";
+    ctx.fillStyle = hexToRgba(ORANGE,0.10);
     ctx.fillRect(xA, PAD.t, Math.max(1, xB-xA), h - PAD.t - PAD.b);
     [a,b].forEach(idx=>{
       const x = X(idx), y = Y(vis[idx].v);
       ctx.strokeStyle = "rgba(201,197,189,0.5)";
       ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
       ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
-      ctx.fillStyle = "#f2f0eb"; ctx.fill();
+      ctx.fillStyle = "#eef4f9"; ctx.fill();
       ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
       ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.stroke();
     });
@@ -418,7 +507,7 @@ function draw(){
     ctx.strokeStyle = "rgba(201,197,189,0.5)";
     ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
     ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
-    ctx.fillStyle = "#f2f0eb"; ctx.fill();
+    ctx.fillStyle = "#eef4f9"; ctx.fill();
     ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
     ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.stroke();
   }
@@ -477,40 +566,19 @@ window.addEventListener("mouseup", handleUp);
 canvas.addEventListener("mouseleave", handleLeave);
 
 canvas.addEventListener("touchstart", e => {
-  if(e.touches.length >= 2){
-    isDragging = true;
-    hoverIdx = null;
-    dragStart = idxFromX(e.touches[0].clientX);
-    dragCurrent = dragStart;
-    draw(); renderSelection();
-  } else {
-    isDragging = false;
-    dragStart = null; dragCurrent = null; // a fresh single-finger touch clears any locked comparison
-    hoverIdx = idxFromX(e.touches[0].clientX);
-    draw(); renderBig();
-  }
+  dragStart = null; dragCurrent = null; // touch doesn't use the arbitrary two-point drag select
+  hoverIdx = idxFromX(e.touches[0].clientX);
+  draw(); renderTouchScrub(hoverIdx);
 }, {passive:true});
 
 canvas.addEventListener("touchmove", e => {
-  if(e.touches.length >= 2 && isDragging){
-    dragCurrent = idxFromX(e.touches[0].clientX);
-    draw(); renderSelection();
-  } else if(e.touches.length < 2 && !isDragging){
-    hoverIdx = idxFromX(e.touches[0].clientX);
-    draw(); renderBig();
-  }
+  hoverIdx = idxFromX(e.touches[0].clientX);
+  draw(); renderTouchScrub(hoverIdx);
 }, {passive:true});
 
-canvas.addEventListener("touchend", e => {
-  if(!isDragging) return; // single-finger scrub: leave the last touched value on screen
-  isDragging = false;
-  if(dragStart === dragCurrent){
-    hoverIdx = dragStart;
-    dragStart = null; dragCurrent = null;
-    draw(); renderBig();
-  } else {
-    draw(); renderSelection(); // two-finger compare locks in place, same as a desktop drag
-  }
+canvas.addEventListener("touchend", () => {
+  hoverIdx = null;
+  draw(); renderBig();
 });
 
 document.getElementById("frames").addEventListener("click", e => {
