@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="A canvas-based line chart built to practice frontend data visualization: drag-to-select, responsive scaling, and axis labeling, using placeholder sample data.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#161614;
+    --panel:#1e1e1b;
+    --line:#2c2c27;
+    --cement:#c9c5bd;
+    --cement-dim:#8a877f;
+    --orange:#ff6a00;
+    --green:#2fd07a;
+    --red:#e8503a;
+    --mono:'IBM Plex Mono',monospace;
+    --disp:'Archivo',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--cement);
+    font-family:var(--mono);
+    min-height:100vh;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px}
+
+  /* header */
+  header{
+    display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:26px;
+  }
+  header h1{
+    font-family:var(--disp);
+    font-weight:900;font-stretch:75%;
+    font-size:clamp(20px,4vw,28px);
+    letter-spacing:.02em;text-transform:uppercase;color:var(--cement);
+  }
+  header h1 span{color:var(--orange)}
+  .tag{font-size:11px;color:var(--cement-dim);letter-spacing:.08em;text-transform:uppercase}
+
+  /* big number */
+  .big{margin-bottom:6px}
+  .big .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cement-dim);margin-bottom:6px}
+  .big .value{
+    font-family:var(--disp);font-weight:900;font-stretch:80%;
+    font-size:clamp(44px,10vw,72px);
+    color:#f2f0eb;line-height:1;font-variant-numeric:tabular-nums;
+  }
+  .big .value .pos, .big .value .neg{font-family:var(--disp)}
+  .big .delta{font-size:14px;margin-top:8px;font-variant-numeric:tabular-nums}
+  .big .delta .when{color:var(--cement-dim);margin-left:8px;font-size:12px}
+  .pos{color:var(--green)}
+  .neg{color:var(--red)}
+
+  /* timeframe */
+  .frames{display:flex;gap:8px;margin:20px 0 8px}
+  .frames button{
+    background:none;border:1px solid var(--line);color:var(--cement-dim);
+    font-family:var(--mono);font-size:12px;padding:5px 14px;cursor:pointer;
+    letter-spacing:.06em;transition:all .12s;
+  }
+  .frames button:hover{border-color:var(--cement-dim);color:var(--cement)}
+  .frames button.active{background:var(--orange);border-color:var(--orange);color:#161614;font-weight:600}
+  .frames button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+  /* chart */
+  .chartbox{position:relative;border:1px solid var(--line);background:var(--panel);margin-bottom:6px}
+  canvas{display:block;width:100%;height:360px;touch-action:pan-y;cursor:crosshair;user-select:none}
+  @media(max-width:560px){canvas{height:280px}}
+  @media(max-width:380px){canvas{height:230px}}
+  .hint{font-size:10.5px;color:var(--cement-dim);letter-spacing:.03em;margin:0 0 28px 2px}
+
+  /* stats grid */
+  .stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);margin-bottom:34px;
+  }
+  @media(max-width:520px){.stats{grid-template-columns:1fr}}
+  .stat{background:var(--panel);padding:14px 14px 12px}
+  .stat .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--cement-dim);margin-bottom:6px}
+  .stat .v{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:20px;color:#f2f0eb;font-variant-numeric:tabular-nums}
+  .stat .v.pos{color:var(--green)}
+  .stat .v.neg{color:var(--red)}
+
+  /* million-dollar progress bar */
+  .milestone{margin-bottom:34px}
+  .milestone-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .milestone-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cement-dim)}
+  .milestone-pct{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:18px;color:var(--orange);font-variant-numeric:tabular-nums}
+  .milestone-track{height:10px;background:var(--panel);border:1px solid var(--line)}
+  .milestone-fill{height:100%;background:linear-gradient(90deg,#ff6a00,#ffab5c);width:0%;transition:width .5s ease}
+  .milestone-sub{margin-top:7px;font-size:12px;color:var(--cement-dim);font-variant-numeric:tabular-nums}
+
+  /* history */
+  h2{
+    font-family:var(--disp);font-weight:900;font-stretch:75%;text-transform:uppercase;
+    font-size:16px;letter-spacing:.04em;margin-bottom:12px;color:var(--cement);
+  }
+  h2 span{color:var(--orange)}
+  .rows{border-top:1px solid var(--line)}
+  .row{
+    display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;
+    padding:9px 4px;border-bottom:1px solid var(--line);font-size:13px;
+    font-variant-numeric:tabular-nums;
+  }
+  .row .m{color:var(--cement-dim)}
+  .row .m b{color:var(--orange);font-weight:600;margin-left:8px;font-size:11px}
+  .row .nw{color:#e8e6e0}
+  .row .ch{text-align:right;font-size:12px}
+  @media(max-width:480px){.row{grid-template-columns:88px 1fr auto;font-size:12px}}
+
+  footer{margin-top:40px;font-size:11px;color:var(--cement-dim);letter-spacing:.06em}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Field<span>/</span>Notes</h1>
+    <div class="tag">Charting practice &middot; sample dataset</div>
+  </header>
+
+  <div class="big">
+    <div class="label" id="bigLabel">Running total</div>
+    <div class="value" id="bigValue">$0</div>
+    <div class="delta" id="bigDelta"></div>
+  </div>
+
+  <div class="frames" id="frames">
+    <button data-range="1M">1M</button>
+    <button data-range="3M">3M</button>
+    <button data-range="YTD">YTD</button>
+    <button data-range="1Y">1Y</button>
+    <button data-range="ALL" class="active">ALL</button>
+  </div>
+
+  <div class="chartbox">
+    <canvas id="chart" aria-label="Trend chart. Click and drag to compare two points."></canvas>
+  </div>
+  <div class="hint">Click and drag across the chart to compare any two points. Click once to unlock.</div>
+
+  <div class="milestone">
+    <div class="milestone-head">
+      <span class="milestone-label">Progress bar demo &middot; target $1,000,000</span>
+      <span class="milestone-pct" id="millionPct">0%</span>
+    </div>
+    <div class="milestone-track"><div class="milestone-fill" id="millionFill"></div></div>
+    <div class="milestone-sub" id="millionSub"></div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <h2>Monthly <span>data</span></h2>
+  <div class="rows" id="rows"></div>
+
+  <footer>Built to practice canvas charting: responsive scaling, drag-to-compare, calendar-aware axis labels. Values in DATA are placeholder sample numbers, not real figures. Nothing on this page leaves the browser.</footer>
+</div>
+
+<script>
+/* ============================================================
+   EDIT HERE. Add a new line each month: [year, month, amount, "age label or null"]
+   Month is 1-12. Keep it in order. That's it.
+   ============================================================ */
+const DATA = [
+  [2022, 3, 5000,  "18"],
+  [2022,10, 2500,  "19"],
+  [2023, 1, 5500,  null],
+  [2023, 2, 7000,  null],
+  [2023, 3, 8800,  null],
+  [2023, 4, 11000, null],
+  [2023, 5, 13000, null],
+  [2023, 6, 15500, null],
+  [2023, 7, 18000, null],
+  [2023, 8, 20000, null],
+  [2023, 9, 21000, null],
+  [2023,10, 22000, "20"],
+  [2023,11, 24000, null],
+  [2023,12, 25600, null],
+  [2024, 1, 27100, null],
+  [2024, 2, 29150, null],
+  [2024, 3, 33400, null],
+  [2024, 4, 35130, null],
+  [2024, 5, 37000, null],
+  [2024, 6, 39600, null],
+  [2024, 7, 41930, null],
+  [2024, 8, 44328, null],
+  [2024, 9, 46305, null],
+  [2024,10, 49175, "21"],
+  [2024,11, 64181, null],
+  [2024,12, 65754, null],
+  [2025, 1, 67131, null],
+  [2025, 2, 69204, null],
+  [2025, 3, 71274, null],
+  [2025, 4, 74291, null],
+  [2025, 5, 76583, null],
+  [2025, 6, 77946, null],
+  [2025, 7, 80005, null],
+  [2025, 8, 83910, null],
+  [2025, 9, 88711, null],
+  [2025,10, 96150, "22"],
+  [2025,11, 92178, null],
+  [2025,12, 84981, null],
+  [2026, 1, 103147, null],
+  [2026, 2, 102729, null],
+  [2026, 3, 99227,  null],
+  [2026, 4, 96496,  null],
+  [2026, 5, 103264, null],
+  [2026, 6, 97395,  null],
+  [2026, 7, 109621, null],
+];
+/* ============================================================ */
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const points = DATA.map(d => ({
+  y: d[0], m: d[1], v: d[2], age: d[3],
+  label: MONTHS[d[1]-1] + " " + d[0],
+  short: MONTHS[d[1]-1] + " " + String(d[0]).slice(2),
+  monthOnly: MONTHS[d[1]-1]
+}));
+
+/* Chart starts one entry later than the ledger (Oct 2022 instead of Mar 2022) so the
+   first two points aren't crammed on top of each other at the far left edge. */
+const chartPoints = points.slice(1);
+
+const fmt = n => "$" + Math.round(n).toLocaleString("en-US");
+const fmtSigned = n => (n >= 0 ? "+" : "-") + "$" + Math.abs(Math.round(n)).toLocaleString("en-US");
+const fmtCompact = n => n === 0 ? "$0" : "$" + Math.round(n/1000) + "K";
+
+/* ---------- state ---------- */
+let range = "ALL"; // "1M" | "3M" | "YTD" | "1Y" | "ALL"
+let hoverIdx = null;
+let dragStart = null, dragCurrent = null, isDragging = false;
+
+function visible(){
+  const last = chartPoints[chartPoints.length-1];
+  if(range === "ALL") return chartPoints;
+  if(range === "YTD"){
+    let idx = chartPoints.findIndex(p => p.y === last.y && p.m === 1);
+    if(idx === -1) idx = 0;
+    else if(idx > 0) idx -= 1; // include prior month so first delta reads correctly
+    return chartPoints.slice(idx);
+  }
+  const monthsBack = { "1M":1, "3M":3, "1Y":12 }[range];
+  return chartPoints.slice(Math.max(0, chartPoints.length - monthsBack - 1));
+}
+
+/* ---------- big number ---------- */
+const bigLabel = document.getElementById("bigLabel");
+const bigValue = document.getElementById("bigValue");
+const bigDelta = document.getElementById("bigDelta");
+
+function renderBig(){
+  const vis = visible();
+  let p, prev, whenTxt;
+  if(hoverIdx !== null){
+    p = vis[hoverIdx];
+    prev = hoverIdx > 0 ? vis[hoverIdx-1] : null;
+    bigLabel.textContent = p.label + (p.age ? " \u00b7 " + p.age : "");
+    whenTxt = "vs prior month";
+  } else {
+    p = vis[vis.length-1];
+    prev = vis[0];
+    bigLabel.textContent = "Running total \u00b7 " + p.label;
+    whenTxt = {"1M":"past month","3M":"past 3 months","YTD":"year to date","1Y":"past year","ALL":"all time"}[range];
+  }
+  bigValue.innerHTML = fmt(p.v);
+  if(prev && prev !== p){
+    const diff = p.v - prev.v;
+    const pct = prev.v !== 0 ? (diff/Math.abs(prev.v)*100) : 0;
+    bigDelta.innerHTML =
+      '<span class="' + (diff >= 0 ? "pos" : "neg") + '">' +
+      fmtSigned(diff) + " (" + (diff>=0?"+":"") + pct.toFixed(1) + "%)</span>" +
+      '<span class="when">' + whenTxt + "</span>";
+  } else {
+    bigDelta.innerHTML = "";
+  }
+}
+
+/* ---------- drag-selection readout (like a stock chart) ---------- */
+function renderSelection(){
+  const vis = visible();
+  const a = Math.min(dragStart, dragCurrent);
+  const b = Math.max(dragStart, dragCurrent);
+  const pStart = vis[a], pEnd = vis[b];
+  const diff = pEnd.v - pStart.v;
+  const pct = pStart.v !== 0 ? (diff/Math.abs(pStart.v)*100) : 0;
+  const cls = diff >= 0 ? "pos" : "neg";
+  bigLabel.textContent = pStart.label + " \u2192 " + pEnd.label;
+  bigValue.innerHTML = '<span class="'+cls+'">' + (pct>=0?"+":"") + pct.toFixed(1) + "%</span>";
+  bigDelta.innerHTML = '<span class="'+cls+'">' + fmtSigned(diff) + '</span><span class="when">selected range</span>';
+}
+
+/* ---------- fixed axis increments ---------- */
+function axisTicks(maxVal, step){
+  const top = Math.max(step, Math.ceil(maxVal / step) * step);
+  const out = [];
+  for(let v = 0; v <= top; v += step) out.push(v);
+  return out;
+}
+
+/* ---------- x-axis tick selection ----------
+   Only three kinds of ticks ever show: every October (birthdays), every January (year
+   start), and every occurrence of whatever month the most recent entry falls in. That
+   last group shifts on its own: once an August entry gets added, every July tick drops
+   off and every August shows up instead, so year-over-year comparison always lines up
+   on the current month. Every matching tick is always kept, never dropped, even if two
+   land close together in pixel space (e.g. no Nov/Dec 2022 data means Oct 22 and Jan 23
+   sit right next to each other) — draw() staggers those onto a second row instead. */
+function pickTickIndices(vis, currentMonth){
+  const n = vis.length;
+  const idxs = new Set([0, n-1]);
+  vis.forEach((p,i) => {
+    if(p.y === 2023 && p.m === 1) return; // skip Jan 2023 specifically, it sits right on top of Oct 22
+    if(p.m === 1 || p.m === 10 || p.m === currentMonth) idxs.add(i);
+  });
+  return Array.from(idxs).sort((a,b) => a-b);
+}
+
+/* ---------- chart ---------- */
+const canvas = document.getElementById("chart");
+const ctx = canvas.getContext("2d");
+
+function draw(){
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w*dpr; canvas.height = h*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+
+  /* mobile-adaptive sizing: everything scales off the canvas's own width, not just a CSS
+     breakpoint, so it holds up in narrow webviews too */
+  const isMobile = w < 480;
+  const isTiny = w < 360;
+  const PAD = {
+    t: isMobile ? 20 : 26,
+    r: isMobile ? 8 : 16,
+    b: isMobile ? 38 : 50,
+    l: isMobile ? 8 : 16,
+  };
+  const axisFont   = isTiny ? "8px 'IBM Plex Mono'"   : isMobile ? "8.5px 'IBM Plex Mono'" : "10px 'IBM Plex Mono'";
+  const dateFont   = isTiny ? "8px 'IBM Plex Mono'"   : isMobile ? "8.5px 'IBM Plex Mono'" : "9.5px 'IBM Plex Mono'";
+  const ageFont    = isTiny ? "7.5px 'IBM Plex Mono'" : isMobile ? "8px 'IBM Plex Mono'"   : "9px 'IBM Plex Mono'";
+  const rowGap     = isMobile ? 10 : 12;
+  const minGapPx   = isMobile ? 22 : 34;
+  const fmtAxis    = isMobile ? fmtCompact : fmt;
+
+  const vis = visible();
+  const vals = vis.map(p=>p.v);
+  const rawMax = Math.max(...vals);
+  const ticks = axisTicks(rawMax, 25000);
+  const lo = 0, hi = ticks[ticks.length-1];
+
+  const plotW = w - PAD.l - PAD.r;
+  const X = i => PAD.l + (i/(vis.length-1)) * plotW;
+  const Y = v => PAD.t + (1 - (v-lo)/(hi-lo || 1)) * (h - PAD.t - PAD.b);
+
+  const css = getComputedStyle(document.documentElement);
+  const ORANGE = css.getPropertyValue("--orange").trim();
+  const LINE = css.getPropertyValue("--line").trim();
+  const DIM = css.getPropertyValue("--cement-dim").trim();
+
+  /* horizontal gridlines every $25,000 */
+  ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+  ctx.fillStyle = DIM; ctx.font = axisFont;
+  ctx.textAlign = "left";
+  ticks.forEach(v=>{
+    const y = Y(v);
+    if(y < PAD.t-2 || y > h-PAD.b+2) return;
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(w-PAD.r, y); ctx.stroke();
+    ctx.fillText(fmtAxis(v), PAD.l+2, y-4);
+  });
+
+  /* area fill */
+  const grad = ctx.createLinearGradient(0,PAD.t,0,h-PAD.b);
+  grad.addColorStop(0,"rgba(255,106,0,0.22)");
+  grad.addColorStop(1,"rgba(255,106,0,0)");
+  ctx.beginPath();
+  vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
+  ctx.lineTo(X(vis.length-1), h-PAD.b);
+  ctx.lineTo(X(0), h-PAD.b);
+  ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  /* line */
+  ctx.beginPath();
+  vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
+  ctx.strokeStyle = ORANGE; ctx.lineWidth = isMobile ? 1.75 : 2.25;
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.stroke();
+
+  /* last point dot */
+  const last = vis[vis.length-1];
+  ctx.beginPath();
+  ctx.arc(X(vis.length-1), Y(last.v), isMobile ? 3 : 4, 0, Math.PI*2);
+  ctx.fillStyle = ORANGE; ctx.fill();
+
+  /* x-axis: Octobers, Januarys, and every occurrence of the current month, always full "Mon YY".
+     Close ticks stagger onto a second row instead of getting dropped. */
+  const currentMonth = chartPoints[chartPoints.length-1].m;
+  const tickIdxs = pickTickIndices(vis, currentMonth);
+  const lastXByRow = [-Infinity, -Infinity];
+  ctx.font = dateFont;
+  tickIdxs.forEach(i=>{
+    const p = vis[i];
+    const x = X(i);
+    let row = 0;
+    if(x - lastXByRow[0] < minGapPx){
+      row = (x - lastXByRow[1] >= minGapPx) ? 1 : 0;
+    }
+    lastXByRow[row] = x;
+
+    const align = i===0 ? "left" : (i===vis.length-1 ? "right" : "center");
+    ctx.textAlign = align;
+    const baseY = h - PAD.b + (isMobile ? 12 : 14) + row*rowGap;
+    ctx.fillStyle = DIM;
+    ctx.font = dateFont;
+    ctx.fillText(p.short, x, baseY);
+    if(p.age){
+      ctx.fillStyle = ORANGE;
+      ctx.font = ageFont;
+      ctx.fillText(p.age, x, baseY + rowGap);
+      ctx.font = dateFont;
+    }
+    ctx.strokeStyle = LINE;
+    ctx.beginPath(); ctx.moveTo(x, h-PAD.b); ctx.lineTo(x, h-PAD.b+4); ctx.stroke();
+  });
+  ctx.textAlign = "left";
+
+  /* drag selection band, or single-point hover crosshair */
+  if(dragStart !== null && dragCurrent !== null){
+    const a = Math.min(dragStart, dragCurrent), b = Math.max(dragStart, dragCurrent);
+    const xA = X(a), xB = X(b);
+    ctx.fillStyle = "rgba(255,106,0,0.10)";
+    ctx.fillRect(xA, PAD.t, Math.max(1, xB-xA), h - PAD.t - PAD.b);
+    [a,b].forEach(idx=>{
+      const x = X(idx), y = Y(vis[idx].v);
+      ctx.strokeStyle = "rgba(201,197,189,0.5)";
+      ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+      ctx.fillStyle = "#f2f0eb"; ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+      ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.stroke();
+    });
+  } else if(hoverIdx !== null){
+    const p = vis[hoverIdx], x = X(hoverIdx), y = Y(p.v);
+    ctx.strokeStyle = "rgba(201,197,189,0.5)";
+    ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fillStyle = "#f2f0eb"; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.stroke();
+  }
+}
+
+function idxFromX(clientX){
+  const rect = canvas.getBoundingClientRect();
+  const vis = visible();
+  const isMobile = rect.width < 480;
+  const padL = isMobile ? 8 : 16, padR = isMobile ? 8 : 16;
+  const x = clientX - rect.left;
+  const plotW = rect.width - padL - padR;
+  const rel = (x - padL) / plotW;
+  return Math.max(0, Math.min(vis.length-1, Math.round(rel * (vis.length-1))));
+}
+
+/* ---------- pointer interaction: hover for a single point, drag to compare two ----------
+   A completed drag locks the selection in place (survives mouseleave). It only changes
+   when the person starts a new drag, taps once to dismiss it, or switches timeframe. */
+function handleDown(clientX){
+  isDragging = true;
+  hoverIdx = null;
+  dragStart = idxFromX(clientX);
+  dragCurrent = dragStart;
+  draw(); renderSelection();
+}
+function handleMove(clientX){
+  if(isDragging){
+    dragCurrent = idxFromX(clientX);
+    draw(); renderSelection();
+  } else if(dragStart === null){
+    // only free-hover when nothing is locked in
+    hoverIdx = idxFromX(clientX);
+    draw(); renderBig();
+  }
+}
+function handleUp(){
+  if(!isDragging) return;
+  isDragging = false;
+  if(dragStart === dragCurrent){
+    // no real drag happened, treat as a simple point tap and clear any lock
+    hoverIdx = dragStart;
+    dragStart = null; dragCurrent = null;
+    draw(); renderBig();
+  } else {
+    // real drag: lock this comparison in place
+    draw(); renderSelection();
+  }
+}
+function handleLeave(){
+  if(isDragging || dragStart !== null) return; // don't disturb a locked selection or a live drag
+  hoverIdx = null;
+  draw(); renderBig();
+}
+
+canvas.addEventListener("mousedown", e => handleDown(e.clientX));
+canvas.addEventListener("mousemove", e => handleMove(e.clientX));
+window.addEventListener("mouseup", handleUp);
+canvas.addEventListener("mouseleave", handleLeave);
+
+/* touch: one finger scrubs through single points (like sliding through a slideshow),
+   two fingers drags out a comparison range the same way a mouse-drag does on desktop. */
+canvas.addEventListener("touchstart", e => {
+  if(e.touches.length >= 2){
+    isDragging = true;
+    hoverIdx = null;
+    dragStart = idxFromX(e.touches[0].clientX);
+    dragCurrent = dragStart;
+    draw(); renderSelection();
+  } else {
+    isDragging = false;
+    dragStart = null; dragCurrent = null; // a fresh single-finger touch clears any locked comparison
+    hoverIdx = idxFromX(e.touches[0].clientX);
+    draw(); renderBig();
+  }
+}, {passive:true});
+
+canvas.addEventListener("touchmove", e => {
+  if(e.touches.length >= 2 && isDragging){
+    dragCurrent = idxFromX(e.touches[0].clientX);
+    draw(); renderSelection();
+  } else if(e.touches.length < 2 && !isDragging){
+    hoverIdx = idxFromX(e.touches[0].clientX);
+    draw(); renderBig();
+  }
+}, {passive:true});
+
+canvas.addEventListener("touchend", e => {
+  if(!isDragging) return; // single-finger scrub: leave the last touched value on screen
+  isDragging = false;
+  if(dragStart === dragCurrent){
+    hoverIdx = dragStart;
+    dragStart = null; dragCurrent = null;
+    draw(); renderBig();
+  } else {
+    draw(); renderSelection(); // two-finger compare locks in place, same as a desktop drag
+  }
+});
+
+/* ---------- timeframes ---------- */
+document.getElementById("frames").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  document.querySelectorAll(".frames button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  range = btn.dataset.range;
+  hoverIdx = null; dragStart = null; dragCurrent = null;
+  draw(); renderBig();
+});
+
+/* ---------- stats (all-time, independent of timeframe) ---------- */
+function renderStats(){
+  const first = points[0], last = points[points.length-1];
+  const total = last.v - first.v;
+  let best = null;
+  for(let i=1;i<points.length;i++){
+    const d = points[i].v - points[i-1].v;
+    if(best === null || d > best.d) best = {d, label: points[i].label};
+  }
+  const months = points.length - 1;
+  const avg = total / months;
+  const el = document.getElementById("stats");
+  el.innerHTML = [
+    ["All-time gain", fmtSigned(total), total>=0?"pos":"neg"],
+    ["Avg / month", fmtSigned(avg), avg>=0?"pos":"neg"],
+    ["Best month", best.label + " " + fmtSigned(best.d), "pos"],
+  ].map(([k,v,c]) =>
+    '<div class="stat"><div class="k">'+k+'</div><div class="v '+c+'">'+v+'</div></div>'
+  ).join("");
+}
+
+/* ---------- million-dollar progress bar ---------- */
+const GOAL = 1000000;
+function renderMilestone(){
+  const current = points[points.length-1].v;
+  const pct = Math.max(0, Math.min(100, (current / GOAL) * 100));
+  document.getElementById("millionPct").textContent = pct.toFixed(1) + "%";
+  document.getElementById("millionFill").style.width = pct + "%";
+  const sub = document.getElementById("millionSub");
+  if(current >= GOAL){
+    sub.textContent = fmt(current - GOAL) + " past the mark. Onward.";
+  } else {
+    sub.textContent = fmt(GOAL - current) + " to go";
+  }
+}
+
+/* ---------- ledger (keeps the full history, including Mar 2022) ---------- */
+function renderRows(){
+  const el = document.getElementById("rows");
+  const html = [];
+  for(let i = points.length-1; i >= 0; i--){
+    const p = points[i];
+    const prev = i > 0 ? points[i-1] : null;
+    const d = prev ? p.v - prev.v : null;
+    html.push(
+      '<div class="row">' +
+        '<div class="m">'+p.label+(p.age?'<b>'+p.age+'</b>':'')+'</div>' +
+        '<div class="nw">'+fmt(p.v)+'</div>' +
+        '<div class="ch '+(d===null?'':(d>=0?'pos':'neg'))+'">'+(d===null?'start':fmtSigned(d))+'</div>' +
+      '</div>'
+    );
+  }
+  el.innerHTML = html.join("");
+}
+
+/* ---------- init ---------- */
+renderStats();
+renderRows();
+renderMilestone();
+renderBig();
+draw();
+window.addEventListener("resize", () => { draw(); });
+</script>
+</body>
+</html>
