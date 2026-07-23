@@ -10,19 +10,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#070b12;
-    --panel:#0e1520;
+    --bg:#03060c;
+    --panel:#0a1220;
     --line:#1c2735;
-    --cement:#dde6ee;
-    --cement-dim:#66798d;
-    --orange:#cbaf82;
-    --green:#6fd6b4;
-    --red:#e08a6b;
+    --cement:#eef7ff;
+    --cement-dim:#7ea3c2;
+    --orange:#2fc6ff;
+    --cream:#f6e3ba;
+    --green:#39e6a5;
+    --red:#ff6b52;
     --mono:'IBM Plex Mono',monospace;
     --disp:'Archivo',sans-serif;
-    --glass:rgba(255,255,255,0.055);
-    --glass-border:rgba(255,255,255,0.14);
-    --glass-shadow:0 10px 40px rgba(0,0,0,0.45);
+    --glass:rgba(47,198,255,0.07);
+    --glass-border:rgba(47,198,255,0.22);
+    --glass-shadow:0 0 40px rgba(47,198,255,0.12), 0 10px 40px rgba(0,0,0,0.5);
     --radius-lg:22px;
     --radius-md:16px;
     --radius-pill:999px;
@@ -40,9 +41,9 @@
     content:"";
     position:fixed; inset:-10%;
     background:
-      radial-gradient(600px 600px at 12% 8%, rgba(203,175,130,0.16), transparent 60%),
-      radial-gradient(700px 700px at 92% 20%, rgba(111,214,180,0.12), transparent 60%),
-      radial-gradient(800px 800px at 50% 95%, rgba(102,121,141,0.18), transparent 60%);
+      radial-gradient(650px 650px at 12% 6%, rgba(47,198,255,0.30), transparent 60%),
+      radial-gradient(750px 750px at 95% 18%, rgba(246,227,186,0.20), transparent 60%),
+      radial-gradient(800px 800px at 50% 95%, rgba(47,198,255,0.16), transparent 60%);
     z-index:-1; pointer-events:none;
   }
   .wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px}
@@ -66,7 +67,7 @@
   .big .value{
     font-family:var(--disp);font-weight:900;font-stretch:80%;
     font-size:clamp(44px,10vw,72px);
-    color:#eef4f9;line-height:1;font-variant-numeric:tabular-nums;
+    color:#eef7ff;line-height:1;font-variant-numeric:tabular-nums;
   }
   .big .value .pos, .big .value .neg{font-family:var(--disp)}
   .big .delta{font-size:14px;margin-top:8px;font-variant-numeric:tabular-nums}
@@ -90,8 +91,8 @@
   }
   .frames button:hover{color:var(--cement)}
   .frames button.active{
-    background:linear-gradient(160deg,#e6d7b3,var(--orange));
-    color:#1a1408;font-weight:600;
+    background:linear-gradient(160deg,var(--cream),var(--orange));
+    color:#03101c;font-weight:600;
     box-shadow:0 4px 14px rgba(203,175,130,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
   }
   .frames button:active{transform:scale(0.96)}
@@ -109,6 +110,7 @@
   }
   canvas{display:block;width:100%;height:360px;touch-action:pan-y;cursor:crosshair;user-select:none}
   @media(max-width:560px){canvas{height:280px}}
+  @media(max-width:480px){.chartbox{border-radius:14px}}
   @media(max-width:380px){canvas{height:230px}}
   .hint{font-size:10.5px;color:var(--cement-dim);letter-spacing:.03em;margin:0 0 28px 2px}
 
@@ -125,7 +127,7 @@
     box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
   }
   .stat .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--cement-dim);margin-bottom:6px}
-  .stat .v{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:20px;color:#eef4f9;font-variant-numeric:tabular-nums}
+  .stat .v{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:20px;color:#eef7ff;font-variant-numeric:tabular-nums}
   .stat .v.pos{color:var(--green)}
   .stat .v.neg{color:var(--red)}
 
@@ -140,7 +142,7 @@
     box-shadow:inset 0 1px 3px rgba(0,0,0,0.35);
   }
   .milestone-fill{
-    height:100%;background:linear-gradient(90deg,#cbaf82,#e6d7b3);
+    height:100%;background:linear-gradient(90deg,var(--orange),var(--cream));
     width:0%;transition:width .6s cubic-bezier(.4,0,.2,1);
     border-radius:var(--radius-pill);
     box-shadow:0 0 12px rgba(203,175,130,0.5);
@@ -166,7 +168,7 @@
   .row:last-child{border-bottom:none}
   .row .m{color:var(--cement-dim)}
   .row .m b{color:var(--orange);font-weight:600;margin-left:8px;font-size:11px}
-  .row .nw{color:#eef4f9}
+  .row .nw{color:#eef7ff}
   .row .ch{text-align:right;font-size:12px}
   @media(max-width:480px){.row{grid-template-columns:88px 1fr auto;font-size:12px;padding:10px 12px}}
 
@@ -392,9 +394,9 @@ function draw(){
   const isTiny = w < 360;
   const PAD = {
     t: isMobile ? 20 : 26,
-    r: isMobile ? 8 : 16,
-    b: isMobile ? 38 : 50,
-    l: isMobile ? 8 : 16,
+    r: isMobile ? 14 : 16,
+    b: isMobile ? 44 : 50,
+    l: isMobile ? 14 : 16,
   };
   const axisFont   = isTiny ? "8px 'IBM Plex Mono'"   : isMobile ? "8.5px 'IBM Plex Mono'" : "10px 'IBM Plex Mono'";
   const dateFont   = isTiny ? "8px 'IBM Plex Mono'"   : isMobile ? "8.5px 'IBM Plex Mono'" : "9.5px 'IBM Plex Mono'";
@@ -498,7 +500,7 @@ function draw(){
       ctx.strokeStyle = "rgba(201,197,189,0.5)";
       ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
       ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
-      ctx.fillStyle = "#eef4f9"; ctx.fill();
+      ctx.fillStyle = "#eef7ff"; ctx.fill();
       ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
       ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.stroke();
     });
@@ -507,7 +509,7 @@ function draw(){
     ctx.strokeStyle = "rgba(201,197,189,0.5)";
     ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
     ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
-    ctx.fillStyle = "#eef4f9"; ctx.fill();
+    ctx.fillStyle = "#eef7ff"; ctx.fill();
     ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
     ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.stroke();
   }
@@ -517,7 +519,7 @@ function idxFromX(clientX){
   const rect = canvas.getBoundingClientRect();
   const vis = visible();
   const isMobile = rect.width < 480;
-  const padL = isMobile ? 8 : 16, padR = isMobile ? 8 : 16;
+  const padL = isMobile ? 14 : 16, padR = isMobile ? 14 : 16;
   const x = clientX - rect.left;
   const plotW = rect.width - padL - padR;
   const rel = (x - padL) / plotW;
