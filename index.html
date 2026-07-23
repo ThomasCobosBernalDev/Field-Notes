@@ -53,6 +53,9 @@
     padding-bottom:16px;margin-bottom:28px;
     border-bottom:1px solid var(--glass-border);
   }
+  @media(max-width:420px){
+    header{flex-direction:column;align-items:flex-start;gap:6px}
+  }
   header h1{
     font-family:var(--disp);
     font-weight:900;font-stretch:75%;
@@ -112,7 +115,41 @@
   @media(max-width:560px){canvas{height:280px}}
   @media(max-width:480px){.chartbox{border-radius:14px}}
   @media(max-width:380px){canvas{height:230px}}
-  .hint{font-size:10.5px;color:var(--cement-dim);letter-spacing:.03em;margin:0 0 28px 2px}
+  .hint{font-size:10.5px;color:var(--cement-dim);letter-spacing:.03em;margin:0 0 20px 2px}
+
+  .asset-toggle-card{
+    background:var(--glass);
+    backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--glass-border); border-radius:var(--radius-md);
+    margin-bottom:28px;
+    box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .asset-toggle-row{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 14px;border-bottom:1px solid var(--glass-border);
+  }
+  .asset-toggle-row:last-child{border-bottom:none}
+  .asset-toggle-label{font-size:12px;color:var(--cement-dim);letter-spacing:.03em}
+  .toggle-legend{font-size:10.5px;color:var(--cement-dim);letter-spacing:.03em;margin:-20px 0 20px 2px;display:flex;align-items:center;gap:6px}
+  .toggle-legend .dash{width:16px;height:0;border-top:1.5px dashed var(--cement-dim);display:inline-block}
+  .switch{
+    position:relative;width:44px;height:24px;flex-shrink:0;
+    background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);
+    border-radius:var(--radius-pill);cursor:pointer;padding:0;
+    transition:background .25s ease;
+  }
+  .switch[aria-checked="true"]{
+    background:linear-gradient(160deg,var(--cream),var(--orange));
+    border-color:transparent;
+    box-shadow:0 0 12px rgba(47,198,255,0.4);
+  }
+  .switch-thumb{
+    position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#eef7ff;box-shadow:0 1px 3px rgba(0,0,0,0.4);
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+  }
+  .switch[aria-checked="true"] .switch-thumb{transform:translateX(20px);background:#03101c}
+  .switch:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
 
   .stats{
     display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
@@ -203,6 +240,42 @@
   </div>
   <div class="hint">Drag with your mouse to compare any two points. On touch, drag your finger to scrub and see the change since the start.</div>
 
+  <div class="asset-toggle-card">
+    <div class="asset-toggle-row">
+      <span class="asset-toggle-label">Exclude G</span>
+      <button class="switch" id="goldToggle" role="switch" aria-checked="false" aria-label="Toggle gold holdings out of every figure on this page">
+        <span class="switch-thumb"></span>
+      </button>
+    </div>
+    <div class="asset-toggle-row">
+      <span class="asset-toggle-label">Exclude car</span>
+      <button class="switch" id="carToggle" role="switch" aria-checked="false" aria-label="Toggle the car's value out of every figure on this page">
+        <span class="switch-thumb"></span>
+      </button>
+    </div>
+    <div class="asset-toggle-row">
+      <span class="asset-toggle-label">Exclude motorcycle</span>
+      <button class="switch" id="motoToggle" role="switch" aria-checked="false" aria-label="Toggle the motorcycle's value out of every figure on this page">
+        <span class="switch-thumb"></span>
+      </button>
+    </div>
+    <div class="asset-toggle-row">
+      <span class="asset-toggle-label">Exclude S</span>
+      <button class="switch" id="silverToggle" role="switch" aria-checked="false" aria-label="Toggle silver holdings out of every figure on this page">
+        <span class="switch-thumb"></span>
+      </button>
+    </div>
+    <div class="asset-toggle-row">
+      <span class="asset-toggle-label">Exclude TSP</span>
+      <button class="switch" id="tspToggle" role="switch" aria-checked="false" aria-label="Toggle the TSP balance out of every figure on this page">
+        <span class="switch-thumb"></span>
+      </button>
+    </div>
+  </div>
+  <div class="toggle-legend" id="toggleLegend" style="display:none">
+    <span class="dash"></span> shows the original total with everything included
+  </div>
+
   <div class="milestone">
     <div class="milestone-head">
       <span class="milestone-label">Progress bar demo &middot; target $1,000,000</span>
@@ -221,7 +294,6 @@
 </div>
 
 <script>
-// I add a new line here every month: [year, month, amount, "age or null"]. Month is 1-12, keep it in order.
 const DATA = [
   [2022, 3, 5000,  "18"],
   [2022,10, 2500,  "19"],
@@ -271,6 +343,71 @@ const DATA = [
 ];
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const monthIndex = (y,m) => y*12 + m;
+
+const GOLD_GRAMS = 51.36;
+const OZ_TO_GRAMS = 31.1034768;
+const GOLD_SPOT = {
+  "2024-11": 2650.68, "2024-12": 2644.07,
+  "2025-1": 2709.69, "2025-2": 2894.73, "2025-3": 2983.25, "2025-4": 3207.48,
+  "2025-5": 3277.99, "2025-6": 3352.00, "2025-7": 3338.31, "2025-8": 3362.99,
+  "2025-9": 3665.20, "2025-10": 4053.28, "2025-11": 4082.95, "2025-12": 4289.48,
+  "2026-1": 4744.46, "2026-2": 5019.53, "2026-3": 4862.17, "2026-4": 4723.88,
+  "2026-5": 4587.52, "2026-6": 4018.23, "2026-7": 4135.00,
+};
+function goldValueFor(y, m){
+  const spot = GOLD_SPOT[y + "-" + m];
+  return spot ? (spot * GOLD_GRAMS / OZ_TO_GRAMS) : 0;
+}
+
+const CAR_START_YM = [2024, 11];
+const CAR_END_YM = [2026, 7];
+const CAR_START_VALUE = 9000;
+const CAR_END_VALUE = 7000;
+const CAR_START_IDX = monthIndex(...CAR_START_YM);
+const CAR_END_IDX = monthIndex(...CAR_END_YM);
+const CAR_MONTHLY_RATE = (CAR_END_VALUE - CAR_START_VALUE) / (CAR_END_IDX - CAR_START_IDX);
+function carValueFor(y, m){
+  const idx = monthIndex(y, m);
+  if(idx < CAR_START_IDX) return 0;
+  return CAR_START_VALUE + CAR_MONTHLY_RATE * (idx - CAR_START_IDX);
+}
+
+const MOTO_START_YM = [2026, 2];
+const MOTO_VALUE = 4000;
+const MOTO_START_IDX = monthIndex(...MOTO_START_YM);
+function motoValueFor(y, m){
+  return monthIndex(y, m) >= MOTO_START_IDX ? MOTO_VALUE : 0;
+}
+
+const SILVER_START_YM = [2024, 11];
+const SILVER_ADD_YM = [2026, 7];
+const SILVER_START_IDX = monthIndex(...SILVER_START_YM);
+const SILVER_ADD_IDX = monthIndex(...SILVER_ADD_YM);
+const SILVER_SPOT = {
+  "2024-11": 31.10, "2024-12": 30.80,
+  "2025-1": 30.40, "2025-2": 32.20, "2025-3": 33.20, "2025-4": 32.20,
+  "2025-5": 32.80, "2025-6": 36.00, "2025-7": 37.70, "2025-8": 38.20,
+  "2025-9": 42.80, "2025-10": 49.40, "2025-11": 50.40, "2025-12": 62.30,
+  "2026-1": 92.10, "2026-2": 81.90, "2026-3": 77.90, "2026-4": 75.90,
+  "2026-5": 78.00, "2026-6": 66.70, "2026-7": 59.39,
+};
+function silverValueFor(y, m){
+  const idx = monthIndex(y, m);
+  if(idx < SILVER_START_IDX) return 0;
+  const spot = SILVER_SPOT[y + "-" + m];
+  if(!spot) return 0;
+  const oz = idx >= SILVER_ADD_IDX ? 48 : 28;
+  return oz * spot;
+}
+
+const TSP_START_YM = [2025, 10];
+const TSP_VALUE = 5137;
+const TSP_START_IDX = monthIndex(...TSP_START_YM);
+function tspValueFor(y, m){
+  return monthIndex(y, m) >= TSP_START_IDX ? TSP_VALUE : 0;
+}
+
 const points = DATA.map(d => ({
   y: d[0], m: d[1], v: d[2], age: d[3],
   label: MONTHS[d[1]-1] + " " + d[0],
@@ -279,6 +416,18 @@ const points = DATA.map(d => ({
 }));
 
 const chartPoints = points.slice(1);
+let excludeGold = false;
+let excludeCar = false;
+let excludeMoto = false;
+let excludeSilver = false;
+let excludeTsp = false;
+function anyExcluded(){ return excludeGold || excludeCar || excludeMoto || excludeSilver || excludeTsp; }
+const V = p => p.v
+  - (excludeGold ? goldValueFor(p.y,p.m) : 0)
+  - (excludeCar ? carValueFor(p.y,p.m) : 0)
+  - (excludeMoto ? motoValueFor(p.y,p.m) : 0)
+  - (excludeSilver ? silverValueFor(p.y,p.m) : 0)
+  - (excludeTsp ? tspValueFor(p.y,p.m) : 0);
 
 const fmt = n => "$" + Math.round(n).toLocaleString("en-US");
 const fmtSigned = n => (n >= 0 ? "+" : "-") + "$" + Math.abs(Math.round(n)).toLocaleString("en-US");
@@ -289,7 +438,7 @@ function hexToRgba(hex, alpha){
   return "rgba("+r+","+g+","+b+","+alpha+")";
 }
 
-let range = "ALL"; // "1M" | "3M" | "YTD" | "1Y" | "ALL"
+let range = "ALL";
 let hoverIdx = null;
 let dragStart = null, dragCurrent = null, isDragging = false;
 
@@ -299,7 +448,7 @@ function visible(){
   if(range === "YTD"){
     let idx = chartPoints.findIndex(p => p.y === last.y && p.m === 1);
     if(idx === -1) idx = 0;
-    else if(idx > 0) idx -= 1; // include prior month so first delta reads correctly
+    else if(idx > 0) idx -= 1;
     return chartPoints.slice(idx);
   }
   const monthsBack = { "1M":1, "3M":3, "1Y":12 }[range];
@@ -324,10 +473,10 @@ function renderBig(){
     bigLabel.textContent = "Running total \u00b7 " + p.label;
     whenTxt = {"1M":"past month","3M":"past 3 months","YTD":"year to date","1Y":"past year","ALL":"all time"}[range];
   }
-  bigValue.innerHTML = fmt(p.v);
+  bigValue.innerHTML = fmt(V(p));
   if(prev && prev !== p){
-    const diff = p.v - prev.v;
-    const pct = prev.v !== 0 ? (diff/Math.abs(prev.v)*100) : 0;
+    const diff = V(p) - V(prev);
+    const pct = V(prev) !== 0 ? (diff/Math.abs(V(prev))*100) : 0;
     bigDelta.innerHTML =
       '<span class="' + (diff >= 0 ? "pos" : "neg") + '">' +
       fmtSigned(diff) + " (" + (diff>=0?"+":"") + pct.toFixed(1) + "%)</span>" +
@@ -342,8 +491,8 @@ function renderSelection(){
   const a = Math.min(dragStart, dragCurrent);
   const b = Math.max(dragStart, dragCurrent);
   const pStart = vis[a], pEnd = vis[b];
-  const diff = pEnd.v - pStart.v;
-  const pct = pStart.v !== 0 ? (diff/Math.abs(pStart.v)*100) : 0;
+  const diff = V(pEnd) - V(pStart);
+  const pct = V(pStart) !== 0 ? (diff/Math.abs(V(pStart))*100) : 0;
   const cls = diff >= 0 ? "pos" : "neg";
   bigLabel.textContent = pStart.label + " \u2192 " + pEnd.label;
   bigValue.innerHTML = '<span class="'+cls+'">' + (pct>=0?"+":"") + pct.toFixed(1) + "%</span>";
@@ -353,11 +502,11 @@ function renderSelection(){
 function renderTouchScrub(idx){
   const vis = visible();
   const pStart = vis[0], pEnd = vis[idx];
-  const diff = pEnd.v - pStart.v;
-  const pct = pStart.v !== 0 ? (diff/Math.abs(pStart.v)*100) : 0;
+  const diff = V(pEnd) - V(pStart);
+  const pct = V(pStart) !== 0 ? (diff/Math.abs(V(pStart))*100) : 0;
   const cls = diff >= 0 ? "pos" : "neg";
   bigLabel.textContent = pEnd.label + (pEnd.age ? " \u00b7 " + pEnd.age : "");
-  bigValue.innerHTML = fmt(pEnd.v);
+  bigValue.innerHTML = fmt(V(pEnd));
   bigDelta.innerHTML =
     '<span class="'+cls+'">' + fmtSigned(diff) + " (" + (diff>=0?"+":"") + pct.toFixed(1) + "%)</span>" +
     '<span class="when">since ' + pStart.label + '</span>';
@@ -370,14 +519,48 @@ function axisTicks(maxVal, step){
   return out;
 }
 
-function pickTickIndices(vis, currentMonth){
+function candidateTicks(vis, currentMonth){
   const n = vis.length;
   const idxs = new Set([0, n-1]);
   vis.forEach((p,i) => {
-    if(p.y === 2023 && p.m === 1) return; // skip Jan 2023 specifically, it sits right on top of Oct 22
+    if(p.y === 2023 && p.m === 1) return;
     if(p.m === 1 || p.m === 10 || p.m === currentMonth) idxs.add(i);
   });
-  return Array.from(idxs).sort((a,b) => a-b);
+  return Array.from(idxs).sort((a,b) => a-b).map(i => ({
+    i,
+    priority: vis[i].age ? 3 : (vis[i].m === currentMonth ? 2 : (vis[i].m === 1 ? 1 : 0))
+  }));
+}
+
+function layoutTicks(vis, currentMonth, X, minGapPx, singleRow){
+  const candidates = candidateTicks(vis, currentMonth);
+  const tickRow = {};
+
+  if(singleRow){
+    const kept = [];
+    candidates.forEach(c => {
+      const x = X(c.i);
+      if(kept.length === 0){ kept.push({...c, x}); return; }
+      const last = kept[kept.length-1];
+      if(x - last.x >= minGapPx){
+        kept.push({...c, x});
+      } else if(c.priority > last.priority){
+        kept[kept.length-1] = {...c, x};
+      }
+    });
+    kept.forEach(c => { tickRow[c.i] = 0; });
+    return { tickIdxs: kept.map(c => c.i), tickRow, numRows: 1 };
+  }
+
+  const rowsLastX = [];
+  candidates.forEach(c => {
+    const x = X(c.i);
+    let r = 0;
+    while(rowsLastX[r] !== undefined && x - rowsLastX[r] < minGapPx) r++;
+    rowsLastX[r] = x;
+    tickRow[c.i] = r;
+  });
+  return { tickIdxs: candidates.map(c => c.i), tickRow, numRows: rowsLastX.length };
 }
 
 const canvas = document.getElementById("chart");
@@ -393,26 +576,34 @@ function draw(){
     const isMobile = w < 480;
   const isTiny = w < 360;
   const PAD = {
-    t: isMobile ? 20 : 26,
+    t: isMobile ? 24 : 26,
     r: isMobile ? 14 : 16,
-    b: isMobile ? 44 : 50,
     l: isMobile ? 14 : 16,
   };
   const axisFont   = isTiny ? "8px 'IBM Plex Mono'"   : isMobile ? "8.5px 'IBM Plex Mono'" : "10px 'IBM Plex Mono'";
   const dateFont   = isTiny ? "8px 'IBM Plex Mono'"   : isMobile ? "8.5px 'IBM Plex Mono'" : "9.5px 'IBM Plex Mono'";
   const ageFont    = isTiny ? "7.5px 'IBM Plex Mono'" : isMobile ? "8px 'IBM Plex Mono'"   : "9px 'IBM Plex Mono'";
-  const rowGap     = isMobile ? 10 : 12;
-  const minGapPx   = isMobile ? 22 : 34;
+  const rowGap     = isMobile ? 11 : 13;
+  const minGapPx   = 34;
   const fmtAxis    = isMobile ? fmtCompact : fmt;
 
   const vis = visible();
-  const vals = vis.map(p=>p.v);
+  const vals = vis.map(p=>Math.max(V(p), p.v));
   const rawMax = Math.max(...vals);
   const ticks = axisTicks(rawMax, 25000);
   const lo = 0, hi = ticks[ticks.length-1];
 
   const plotW = w - PAD.l - PAD.r;
   const X = i => PAD.l + (i/(vis.length-1)) * plotW;
+
+  const currentMonth = chartPoints[chartPoints.length-1].m;
+  const { tickIdxs, tickRow, numRows } = layoutTicks(vis, currentMonth, X, minGapPx, isMobile);
+  const hasAge = tickIdxs.some(i => vis[i].age);
+  const dateBandTop = isMobile ? 12 : 14;
+  const dateBandHeight = dateBandTop + (numRows-1)*rowGap;
+  const bottomContent = hasAge ? dateBandHeight + rowGap : dateBandHeight;
+  PAD.b = bottomContent + (isMobile ? 16 : 12);
+
   const Y = v => PAD.t + (1 - (v-lo)/(hi-lo || 1)) * (h - PAD.t - PAD.b);
 
   const css = getComputedStyle(document.documentElement);
@@ -434,22 +625,32 @@ function draw(){
   grad.addColorStop(0,hexToRgba(ORANGE,0.22));
   grad.addColorStop(1,hexToRgba(ORANGE,0));
   ctx.beginPath();
-  vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
+  vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(V(p))) : ctx.lineTo(X(i),Y(V(p))));
   ctx.lineTo(X(vis.length-1), h-PAD.b);
   ctx.lineTo(X(0), h-PAD.b);
   ctx.closePath();
   ctx.fillStyle = grad; ctx.fill();
 
     ctx.beginPath();
-  vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
+  vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(V(p))) : ctx.lineTo(X(i),Y(V(p))));
   ctx.strokeStyle = ORANGE; ctx.lineWidth = isMobile ? 1.75 : 2.25;
   ctx.lineJoin = "round"; ctx.lineCap = "round";
   ctx.shadowColor = hexToRgba(ORANGE, 0.6); ctx.shadowBlur = isMobile ? 6 : 10;
   ctx.stroke();
   ctx.shadowBlur = 0;
 
+  if(anyExcluded()){
+    ctx.beginPath();
+    vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
+    ctx.strokeStyle = hexToRgba(DIM, 0.8);
+    ctx.lineWidth = isMobile ? 1.25 : 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
     const last = vis[vis.length-1];
-  const lastX = X(vis.length-1), lastY = Y(last.v);
+  const lastX = X(vis.length-1), lastY = Y(V(last));
   const haloR = isMobile ? 10 : 14;
   const halo = ctx.createRadialGradient(lastX,lastY,0,lastX,lastY,haloR);
   halo.addColorStop(0, hexToRgba(ORANGE, 0.55));
@@ -460,29 +661,21 @@ function draw(){
   ctx.arc(lastX, lastY, isMobile ? 3 : 4, 0, Math.PI*2);
   ctx.fillStyle = ORANGE; ctx.fill();
 
-    const currentMonth = chartPoints[chartPoints.length-1].m;
-  const tickIdxs = pickTickIndices(vis, currentMonth);
-  const lastXByRow = [-Infinity, -Infinity];
   ctx.font = dateFont;
   tickIdxs.forEach(i=>{
     const p = vis[i];
     const x = X(i);
-    let row = 0;
-    if(x - lastXByRow[0] < minGapPx){
-      row = (x - lastXByRow[1] >= minGapPx) ? 1 : 0;
-    }
-    lastXByRow[row] = x;
-
+    const row = tickRow[i];
     const align = i===0 ? "left" : (i===vis.length-1 ? "right" : "center");
     ctx.textAlign = align;
-    const baseY = h - PAD.b + (isMobile ? 12 : 14) + row*rowGap;
+    const baseY = h - PAD.b + dateBandTop + row*rowGap;
     ctx.fillStyle = DIM;
     ctx.font = dateFont;
     ctx.fillText(p.short, x, baseY);
     if(p.age){
       ctx.fillStyle = ORANGE;
       ctx.font = ageFont;
-      ctx.fillText(p.age, x, baseY + rowGap);
+      ctx.fillText(p.age, x, h - PAD.b + dateBandTop + numRows*rowGap);
       ctx.font = dateFont;
     }
     ctx.strokeStyle = LINE;
@@ -496,7 +689,7 @@ function draw(){
     ctx.fillStyle = hexToRgba(ORANGE,0.10);
     ctx.fillRect(xA, PAD.t, Math.max(1, xB-xA), h - PAD.t - PAD.b);
     [a,b].forEach(idx=>{
-      const x = X(idx), y = Y(vis[idx].v);
+      const x = X(idx), y = Y(V(vis[idx]));
       ctx.strokeStyle = "rgba(201,197,189,0.5)";
       ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
       ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
@@ -505,7 +698,7 @@ function draw(){
       ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.stroke();
     });
   } else if(hoverIdx !== null){
-    const p = vis[hoverIdx], x = X(hoverIdx), y = Y(p.v);
+    const p = vis[hoverIdx], x = X(hoverIdx), y = Y(V(p));
     ctx.strokeStyle = "rgba(201,197,189,0.5)";
     ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, h-PAD.b); ctx.stroke();
     ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
@@ -538,7 +731,6 @@ function handleMove(clientX){
     dragCurrent = idxFromX(clientX);
     draw(); renderSelection();
   } else if(dragStart === null){
-    // only free-hover when nothing is locked in
     hoverIdx = idxFromX(clientX);
     draw(); renderBig();
   }
@@ -547,17 +739,15 @@ function handleUp(){
   if(!isDragging) return;
   isDragging = false;
   if(dragStart === dragCurrent){
-    // no real drag happened, treat as a simple point tap and clear any lock
     hoverIdx = dragStart;
     dragStart = null; dragCurrent = null;
     draw(); renderBig();
   } else {
-    // real drag: lock this comparison in place
     draw(); renderSelection();
   }
 }
 function handleLeave(){
-  if(isDragging || dragStart !== null) return; // don't disturb a locked selection or a live drag
+  if(isDragging || dragStart !== null) return;
   hoverIdx = null;
   draw(); renderBig();
 }
@@ -568,7 +758,7 @@ window.addEventListener("mouseup", handleUp);
 canvas.addEventListener("mouseleave", handleLeave);
 
 canvas.addEventListener("touchstart", e => {
-  dragStart = null; dragCurrent = null; // touch doesn't use the arbitrary two-point drag select
+  dragStart = null; dragCurrent = null;
   hoverIdx = idxFromX(e.touches[0].clientX);
   draw(); renderTouchScrub(hoverIdx);
 }, {passive:true});
@@ -595,10 +785,10 @@ document.getElementById("frames").addEventListener("click", e => {
 
 function renderStats(){
   const first = points[0], last = points[points.length-1];
-  const total = last.v - first.v;
+  const total = V(last) - V(first);
   let best = null;
   for(let i=1;i<points.length;i++){
-    const d = points[i].v - points[i-1].v;
+    const d = V(points[i]) - V(points[i-1]);
     if(best === null || d > best.d) best = {d, label: points[i].label};
   }
   const months = points.length - 1;
@@ -615,7 +805,7 @@ function renderStats(){
 
 const GOAL = 1000000;
 function renderMilestone(){
-  const current = points[points.length-1].v;
+  const current = V(points[points.length-1]);
   const pct = Math.max(0, Math.min(100, (current / GOAL) * 100));
   document.getElementById("millionPct").textContent = pct.toFixed(1) + "%";
   document.getElementById("millionFill").style.width = pct + "%";
@@ -633,17 +823,59 @@ function renderRows(){
   for(let i = points.length-1; i >= 0; i--){
     const p = points[i];
     const prev = i > 0 ? points[i-1] : null;
-    const d = prev ? p.v - prev.v : null;
+    const d = prev ? V(p) - V(prev) : null;
     html.push(
       '<div class="row">' +
         '<div class="m">'+p.label+(p.age?'<b>'+p.age+'</b>':'')+'</div>' +
-        '<div class="nw">'+fmt(p.v)+'</div>' +
+        '<div class="nw">'+fmt(V(p))+'</div>' +
         '<div class="ch '+(d===null?'':(d>=0?'pos':'neg'))+'">'+(d===null?'start':fmtSigned(d))+'</div>' +
       '</div>'
     );
   }
   el.innerHTML = html.join("");
 }
+
+const toggleLegend = document.getElementById("toggleLegend");
+function refreshAfterToggle(){
+  hoverIdx = null; dragStart = null; dragCurrent = null;
+  toggleLegend.style.display = anyExcluded() ? "flex" : "none";
+  renderStats(); renderRows(); renderMilestone(); renderBig(); draw();
+}
+
+const goldToggle = document.getElementById("goldToggle");
+goldToggle.addEventListener("click", () => {
+  excludeGold = !excludeGold;
+  goldToggle.setAttribute("aria-checked", excludeGold ? "true" : "false");
+  refreshAfterToggle();
+});
+
+const carToggle = document.getElementById("carToggle");
+carToggle.addEventListener("click", () => {
+  excludeCar = !excludeCar;
+  carToggle.setAttribute("aria-checked", excludeCar ? "true" : "false");
+  refreshAfterToggle();
+});
+
+const motoToggle = document.getElementById("motoToggle");
+motoToggle.addEventListener("click", () => {
+  excludeMoto = !excludeMoto;
+  motoToggle.setAttribute("aria-checked", excludeMoto ? "true" : "false");
+  refreshAfterToggle();
+});
+
+const silverToggle = document.getElementById("silverToggle");
+silverToggle.addEventListener("click", () => {
+  excludeSilver = !excludeSilver;
+  silverToggle.setAttribute("aria-checked", excludeSilver ? "true" : "false");
+  refreshAfterToggle();
+});
+
+const tspToggle = document.getElementById("tspToggle");
+tspToggle.addEventListener("click", () => {
+  excludeTsp = !excludeTsp;
+  tspToggle.setAttribute("aria-checked", excludeTsp ? "true" : "false");
+  refreshAfterToggle();
+});
 
 renderStats();
 renderRows();
