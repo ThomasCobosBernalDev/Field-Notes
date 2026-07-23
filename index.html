@@ -31,8 +31,7 @@
   }
   .wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px}
 
-  /* header */
-  header{
+    header{
     display:flex;justify-content:space-between;align-items:baseline;
     border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:26px;
   }
@@ -45,8 +44,7 @@
   header h1 span{color:var(--orange)}
   .tag{font-size:11px;color:var(--cement-dim);letter-spacing:.08em;text-transform:uppercase}
 
-  /* big number */
-  .big{margin-bottom:6px}
+    .big{margin-bottom:6px}
   .big .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cement-dim);margin-bottom:6px}
   .big .value{
     font-family:var(--disp);font-weight:900;font-stretch:80%;
@@ -59,8 +57,7 @@
   .pos{color:var(--green)}
   .neg{color:var(--red)}
 
-  /* timeframe */
-  .frames{display:flex;gap:8px;margin:20px 0 8px}
+    .frames{display:flex;gap:8px;margin:20px 0 8px}
   .frames button{
     background:none;border:1px solid var(--line);color:var(--cement-dim);
     font-family:var(--mono);font-size:12px;padding:5px 14px;cursor:pointer;
@@ -70,15 +67,13 @@
   .frames button.active{background:var(--orange);border-color:var(--orange);color:#161614;font-weight:600}
   .frames button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
 
-  /* chart */
-  .chartbox{position:relative;border:1px solid var(--line);background:var(--panel);margin-bottom:6px}
+    .chartbox{position:relative;border:1px solid var(--line);background:var(--panel);margin-bottom:6px}
   canvas{display:block;width:100%;height:360px;touch-action:pan-y;cursor:crosshair;user-select:none}
   @media(max-width:560px){canvas{height:280px}}
   @media(max-width:380px){canvas{height:230px}}
   .hint{font-size:10.5px;color:var(--cement-dim);letter-spacing:.03em;margin:0 0 28px 2px}
 
-  /* stats grid */
-  .stats{
+    .stats{
     display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
     background:var(--line);border:1px solid var(--line);margin-bottom:34px;
   }
@@ -89,8 +84,7 @@
   .stat .v.pos{color:var(--green)}
   .stat .v.neg{color:var(--red)}
 
-  /* million-dollar progress bar */
-  .milestone{margin-bottom:34px}
+    .milestone{margin-bottom:34px}
   .milestone-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
   .milestone-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--cement-dim)}
   .milestone-pct{font-family:var(--disp);font-weight:800;font-stretch:85%;font-size:18px;color:var(--orange);font-variant-numeric:tabular-nums}
@@ -98,8 +92,7 @@
   .milestone-fill{height:100%;background:linear-gradient(90deg,#ff6a00,#ffab5c);width:0%;transition:width .5s ease}
   .milestone-sub{margin-top:7px;font-size:12px;color:var(--cement-dim);font-variant-numeric:tabular-nums}
 
-  /* history */
-  h2{
+    h2{
     font-family:var(--disp);font-weight:900;font-stretch:75%;text-transform:uppercase;
     font-size:16px;letter-spacing:.04em;margin-bottom:12px;color:var(--cement);
   }
@@ -165,10 +158,6 @@
 </div>
 
 <script>
-/* ============================================================
-   EDIT HERE. Add a new line each month: [year, month, amount, "age label or null"]
-   Month is 1-12. Keep it in order. That's it.
-   ============================================================ */
 const DATA = [
   [2022, 3, 5000,  "18"],
   [2022,10, 2500,  "19"],
@@ -216,7 +205,6 @@ const DATA = [
   [2026, 6, 97395,  null],
   [2026, 7, 109621, null],
 ];
-/* ============================================================ */
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const points = DATA.map(d => ({
@@ -226,15 +214,12 @@ const points = DATA.map(d => ({
   monthOnly: MONTHS[d[1]-1]
 }));
 
-/* Chart starts one entry later than the ledger (Oct 2022 instead of Mar 2022) so the
-   first two points aren't crammed on top of each other at the far left edge. */
 const chartPoints = points.slice(1);
 
 const fmt = n => "$" + Math.round(n).toLocaleString("en-US");
 const fmtSigned = n => (n >= 0 ? "+" : "-") + "$" + Math.abs(Math.round(n)).toLocaleString("en-US");
 const fmtCompact = n => n === 0 ? "$0" : "$" + Math.round(n/1000) + "K";
 
-/* ---------- state ---------- */
 let range = "ALL"; // "1M" | "3M" | "YTD" | "1Y" | "ALL"
 let hoverIdx = null;
 let dragStart = null, dragCurrent = null, isDragging = false;
@@ -252,7 +237,6 @@ function visible(){
   return chartPoints.slice(Math.max(0, chartPoints.length - monthsBack - 1));
 }
 
-/* ---------- big number ---------- */
 const bigLabel = document.getElementById("bigLabel");
 const bigValue = document.getElementById("bigValue");
 const bigDelta = document.getElementById("bigDelta");
@@ -284,7 +268,6 @@ function renderBig(){
   }
 }
 
-/* ---------- drag-selection readout (like a stock chart) ---------- */
 function renderSelection(){
   const vis = visible();
   const a = Math.min(dragStart, dragCurrent);
@@ -298,7 +281,6 @@ function renderSelection(){
   bigDelta.innerHTML = '<span class="'+cls+'">' + fmtSigned(diff) + '</span><span class="when">selected range</span>';
 }
 
-/* ---------- fixed axis increments ---------- */
 function axisTicks(maxVal, step){
   const top = Math.max(step, Math.ceil(maxVal / step) * step);
   const out = [];
@@ -306,14 +288,6 @@ function axisTicks(maxVal, step){
   return out;
 }
 
-/* ---------- x-axis tick selection ----------
-   Only three kinds of ticks ever show: every October (birthdays), every January (year
-   start), and every occurrence of whatever month the most recent entry falls in. That
-   last group shifts on its own: once an August entry gets added, every July tick drops
-   off and every August shows up instead, so year-over-year comparison always lines up
-   on the current month. Every matching tick is always kept, never dropped, even if two
-   land close together in pixel space (e.g. no Nov/Dec 2022 data means Oct 22 and Jan 23
-   sit right next to each other) — draw() staggers those onto a second row instead. */
 function pickTickIndices(vis, currentMonth){
   const n = vis.length;
   const idxs = new Set([0, n-1]);
@@ -324,7 +298,6 @@ function pickTickIndices(vis, currentMonth){
   return Array.from(idxs).sort((a,b) => a-b);
 }
 
-/* ---------- chart ---------- */
 const canvas = document.getElementById("chart");
 const ctx = canvas.getContext("2d");
 
@@ -335,9 +308,7 @@ function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
 
-  /* mobile-adaptive sizing: everything scales off the canvas's own width, not just a CSS
-     breakpoint, so it holds up in narrow webviews too */
-  const isMobile = w < 480;
+    const isMobile = w < 480;
   const isTiny = w < 360;
   const PAD = {
     t: isMobile ? 20 : 26,
@@ -367,8 +338,7 @@ function draw(){
   const LINE = css.getPropertyValue("--line").trim();
   const DIM = css.getPropertyValue("--cement-dim").trim();
 
-  /* horizontal gridlines every $25,000 */
-  ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+    ctx.strokeStyle = LINE; ctx.lineWidth = 1;
   ctx.fillStyle = DIM; ctx.font = axisFont;
   ctx.textAlign = "left";
   ticks.forEach(v=>{
@@ -378,8 +348,7 @@ function draw(){
     ctx.fillText(fmtAxis(v), PAD.l+2, y-4);
   });
 
-  /* area fill */
-  const grad = ctx.createLinearGradient(0,PAD.t,0,h-PAD.b);
+    const grad = ctx.createLinearGradient(0,PAD.t,0,h-PAD.b);
   grad.addColorStop(0,"rgba(255,106,0,0.22)");
   grad.addColorStop(1,"rgba(255,106,0,0)");
   ctx.beginPath();
@@ -389,22 +358,18 @@ function draw(){
   ctx.closePath();
   ctx.fillStyle = grad; ctx.fill();
 
-  /* line */
-  ctx.beginPath();
+    ctx.beginPath();
   vis.forEach((p,i)=> i===0 ? ctx.moveTo(X(i),Y(p.v)) : ctx.lineTo(X(i),Y(p.v)));
   ctx.strokeStyle = ORANGE; ctx.lineWidth = isMobile ? 1.75 : 2.25;
   ctx.lineJoin = "round"; ctx.lineCap = "round";
   ctx.stroke();
 
-  /* last point dot */
-  const last = vis[vis.length-1];
+    const last = vis[vis.length-1];
   ctx.beginPath();
   ctx.arc(X(vis.length-1), Y(last.v), isMobile ? 3 : 4, 0, Math.PI*2);
   ctx.fillStyle = ORANGE; ctx.fill();
 
-  /* x-axis: Octobers, Januarys, and every occurrence of the current month, always full "Mon YY".
-     Close ticks stagger onto a second row instead of getting dropped. */
-  const currentMonth = chartPoints[chartPoints.length-1].m;
+    const currentMonth = chartPoints[chartPoints.length-1].m;
   const tickIdxs = pickTickIndices(vis, currentMonth);
   const lastXByRow = [-Infinity, -Infinity];
   ctx.font = dateFont;
@@ -434,8 +399,7 @@ function draw(){
   });
   ctx.textAlign = "left";
 
-  /* drag selection band, or single-point hover crosshair */
-  if(dragStart !== null && dragCurrent !== null){
+    if(dragStart !== null && dragCurrent !== null){
     const a = Math.min(dragStart, dragCurrent), b = Math.max(dragStart, dragCurrent);
     const xA = X(a), xB = X(b);
     ctx.fillStyle = "rgba(255,106,0,0.10)";
@@ -471,9 +435,6 @@ function idxFromX(clientX){
   return Math.max(0, Math.min(vis.length-1, Math.round(rel * (vis.length-1))));
 }
 
-/* ---------- pointer interaction: hover for a single point, drag to compare two ----------
-   A completed drag locks the selection in place (survives mouseleave). It only changes
-   when the person starts a new drag, taps once to dismiss it, or switches timeframe. */
 function handleDown(clientX){
   isDragging = true;
   hoverIdx = null;
@@ -515,8 +476,6 @@ canvas.addEventListener("mousemove", e => handleMove(e.clientX));
 window.addEventListener("mouseup", handleUp);
 canvas.addEventListener("mouseleave", handleLeave);
 
-/* touch: one finger scrubs through single points (like sliding through a slideshow),
-   two fingers drags out a comparison range the same way a mouse-drag does on desktop. */
 canvas.addEventListener("touchstart", e => {
   if(e.touches.length >= 2){
     isDragging = true;
@@ -554,7 +513,6 @@ canvas.addEventListener("touchend", e => {
   }
 });
 
-/* ---------- timeframes ---------- */
 document.getElementById("frames").addEventListener("click", e => {
   const btn = e.target.closest("button");
   if(!btn) return;
@@ -565,7 +523,6 @@ document.getElementById("frames").addEventListener("click", e => {
   draw(); renderBig();
 });
 
-/* ---------- stats (all-time, independent of timeframe) ---------- */
 function renderStats(){
   const first = points[0], last = points[points.length-1];
   const total = last.v - first.v;
@@ -586,7 +543,6 @@ function renderStats(){
   ).join("");
 }
 
-/* ---------- million-dollar progress bar ---------- */
 const GOAL = 1000000;
 function renderMilestone(){
   const current = points[points.length-1].v;
@@ -601,7 +557,6 @@ function renderMilestone(){
   }
 }
 
-/* ---------- ledger (keeps the full history, including Mar 2022) ---------- */
 function renderRows(){
   const el = document.getElementById("rows");
   const html = [];
@@ -620,7 +575,6 @@ function renderRows(){
   el.innerHTML = html.join("");
 }
 
-/* ---------- init ---------- */
 renderStats();
 renderRows();
 renderMilestone();
